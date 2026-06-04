@@ -1,0 +1,266 @@
+{
+  "version": "1.0",
+  "generator": "whykiki-stream-companion",
+  "project_id": "2020-04-12-balkonkonzert",
+  "stream": {
+    "platform": "facebook",
+    "stream_id": "fb-live-987654321",
+    "video_id": "vid-123456789",
+    "title": "Balkonkonzert – Live aus der Nachbarschaft",
+    "started_at": "2020-04-12T18:00:00+02:00",
+    "duration_seconds": 3600
+  },
+  "offset_seconds": 0,
+  "entries": [
+    {
+      "comment": {
+        "id": "c-0001",
+        "platform": "facebook",
+        "stream_id": "fb-live-987654321",
+        "video_id": "vid-123456789",
+        "author_name": "Martina K.",
+        "author_handle": "martina.k",
+        "author_avatar_url": "",
+        "message": "Wunderschön! Grüße vom Nachbarbalkon 🎶",
+        "created_at": "2020-04-12T18:02:15+02:00",
+        "relative_time_seconds": 135,
+        "reactions": 12,
+        "badges": [],
+        "confidence": 1.0
+      },
+      "timeline": {
+        "start_seconds": 135,
+        "duration_seconds": 6,
+        "video_track": 2,
+        "audio_track": 0,
+        "highlight": false,
+        "group_id": null
+      }
+    },
+    {
+      "comment": {
+        "id": "c-0002",
+        "platform": "facebook",
+        "stream_id": "fb-live-987654321",
+        "video_id": "vid-123456789",
+        "author_name": "Jens Petersen",
+        "author_handle": "jens.petersen",
+        "author_avatar_url": "",
+        "message": "Endlich wieder Livemusik, danke dafür!",
+        "created_at": "2020-04-12T18:03:40+02:00",
+        "relative_time_seconds": 220,
+        "reactions": 8,
+        "badges": [],
+        "confidence": 1.0
+      },
+      "timeline": {
+        "start_seconds": 220,
+        "duration_seconds": 6,
+        "video_track": 2,
+        "audio_track": 0,
+        "highlight": false,
+        "group_id": null
+      }
+    },
+    {
+      "comment": {
+        "id": "c-0003",
+        "platform": "facebook",
+        "stream_id": "fb-live-987654321",
+        "video_id": "vid-123456789",
+        "author_name": "Sabine und Klaus",
+        "author_handle": "sabine.klaus",
+        "author_avatar_url": "",
+        "message": "Wir hören von der Straße aus zu 👏👏",
+        "created_at": "2020-04-12T18:05:02+02:00",
+        "relative_time_seconds": 302,
+        "reactions": 21,
+        "badges": [],
+        "confidence": 1.0
+      },
+      "timeline": {
+        "start_seconds": 302,
+        "duration_seconds": 7,
+        "video_track": 2,
+        "audio_track": 0,
+        "highlight": true,
+        "group_id": null
+      }
+    },
+    {
+      "comment": {
+        "id": "c-0004",
+        "platform": "facebook",
+        "stream_id": "fb-live-987654321",
+        "video_id": "vid-123456789",
+        "author_name": "Tom B.",
+        "author_handle": "tom.b",
+        "author_avatar_url": "",
+        "message": "Kannst du 'Über den Wolken' spielen?",
+        "created_at": "2020-04-12T18:07:30+02:00",
+        "relative_time_seconds": 450,
+        "reactions": 35,
+        "badges": [],
+        "confidence": 1.0
+      },
+      "timeline": {
+        "start_seconds": 450,
+        "duration_seconds": 8,
+        "video_track": 2,
+        "audio_track": 0,
+        "highlight": true,
+        "group_id": "songwunsch"
+      }
+    },
+    {
+      "comment": {
+        "id": "c-0005",
+        "platform": "facebook",
+        "stream_id": "fb-live-987654321",
+        "video_id": "vid-123456789",
+        "author_name": "Annika Weber",
+        "author_handle": "annika.weber",
+        "author_avatar_url": "",
+        "message": "Gänsehaut pur 😍",
+        "created_at": "2020-04-12T18:09:11+02:00",
+        "relative_time_seconds": 551,
+        "reactions": 14,
+        "badges": [],
+        "confidence": 1.0
+      },
+      "timeline": {
+        "start_seconds": 551,
+        "duration_seconds": 5,
+        "video_track": 2,
+        "audio_track": 0,
+        "highlight": false,
+        "group_id": null
+      }
+    },
+    {
+      "comment": {
+        "id": "c-0006",
+        "platform": "facebook",
+        "stream_id": "fb-live-987654321",
+        "video_id": "vid-123456789",
+        "author_name": "Familie Yilmaz",
+        "author_handle": "familie.yilmaz",
+        "author_avatar_url": "",
+        "message": "Die Kinder tanzen im Wohnzimmer mit!",
+        "created_at": "2020-04-12T18:12:45+02:00",
+        "relative_time_seconds": 765,
+        "reactions": 27,
+        "badges": [],
+        "confidence": 1.0
+      },
+      "timeline": {
+        "start_seconds": 765,
+        "duration_seconds": 6,
+        "video_track": 2,
+        "audio_track": 0,
+        "highlight": true,
+        "group_id": null
+      }
+    },
+    {
+      "comment": {
+        "id": "c-0007",
+        "platform": "facebook",
+        "stream_id": "fb-live-987654321",
+        "video_id": "vid-123456789",
+        "author_name": "Peter Großmann",
+        "author_handle": "peter.grossmann",
+        "author_avatar_url": "",
+        "message": "Toller Sound, welche Gitarre ist das?",
+        "created_at": "2020-04-12T18:15:20+02:00",
+        "relative_time_seconds": 920,
+        "reactions": 5,
+        "badges": [],
+        "confidence": 1.0
+      },
+      "timeline": {
+        "start_seconds": 920,
+        "duration_seconds": 6,
+        "video_track": 2,
+        "audio_track": 0,
+        "highlight": false,
+        "group_id": null
+      }
+    },
+    {
+      "comment": {
+        "id": "c-0008",
+        "platform": "facebook",
+        "stream_id": "fb-live-987654321",
+        "video_id": "vid-123456789",
+        "author_name": "Lisa M.",
+        "author_handle": "lisa.m",
+        "author_avatar_url": "",
+        "message": "Grüße aus Hamburg, bleibt gesund! ❤️",
+        "created_at": "2020-04-12T18:18:05+02:00",
+        "relative_time_seconds": 1085,
+        "reactions": 19,
+        "badges": [],
+        "confidence": 1.0
+      },
+      "timeline": {
+        "start_seconds": 1085,
+        "duration_seconds": 6,
+        "video_track": 2,
+        "audio_track": 0,
+        "highlight": false,
+        "group_id": null
+      }
+    },
+    {
+      "comment": {
+        "id": "c-0009",
+        "platform": "facebook",
+        "stream_id": "fb-live-987654321",
+        "video_id": "vid-123456789",
+        "author_name": "Der Chor von nebenan",
+        "author_handle": "chor.nebenan",
+        "author_avatar_url": "",
+        "message": "Beim Refrain singen wir alle mit!",
+        "created_at": "2020-04-12T18:21:50+02:00",
+        "relative_time_seconds": 1310,
+        "reactions": 42,
+        "badges": ["fan"],
+        "confidence": 1.0
+      },
+      "timeline": {
+        "start_seconds": 1310,
+        "duration_seconds": 8,
+        "video_track": 2,
+        "audio_track": 0,
+        "highlight": true,
+        "group_id": null
+      }
+    },
+    {
+      "comment": {
+        "id": "c-0010",
+        "platform": "facebook",
+        "stream_id": "fb-live-987654321",
+        "video_id": "vid-123456789",
+        "author_name": "Heike Brandt",
+        "author_handle": "heike.brandt",
+        "author_avatar_url": "",
+        "message": "Bitte nächste Woche wieder! 🙏",
+        "created_at": "2020-04-12T18:25:33+02:00",
+        "relative_time_seconds": 1533,
+        "reactions": 31,
+        "badges": [],
+        "confidence": 1.0
+      },
+      "timeline": {
+        "start_seconds": 1533,
+        "duration_seconds": 6,
+        "video_track": 2,
+        "audio_track": 0,
+        "highlight": false,
+        "group_id": null
+      }
+    }
+  ]
+}
