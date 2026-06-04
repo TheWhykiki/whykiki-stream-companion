@@ -12,7 +12,28 @@ Der Schwerpunkt liegt ausdrücklich nicht auf Transkriptionen oder Untertiteln, 
 4. Jede Plattform wird über Adapter angebunden.
 5. Der gesamte Workflow muss später durch KI-Agenten steuerbar sein (MCP).
 
-## Aktueller Stand: MVP 1 – Premiere-Proof-of-Concept
+## MVP 2 – Core Timeline Builder
+
+Der Core (TypeScript/Node.js ≥ 20, `core/` + `adapters/csv|json/` + `cli/`) übernimmt Import, Normalisierung, Timeline-Bau und Export. Bedienung über die CLI `wsc` – die Kommandos sind bewusst als Vorstufe der späteren MCP-Tools geschnitten.
+
+```bash
+npm install && npm run build
+
+# 1. Rohdaten importieren und normalisieren (CSV oder JSON)
+node dist/cli/index.js import --projekt 2020-04-12-balkonkonzert --datei examples/comments_raw.csv
+
+# 2. Timeline bauen (Offset-Korrektur, Filter, Flutbehandlung, Highlights)
+node dist/cli/index.js build --projekt 2020-04-12-balkonkonzert --offset -2 --blockliste spam
+
+# 3. Ergebnis validieren
+node dist/cli/index.js validate --datei projects/2020-04-12-balkonkonzert/processed/comments_timeline.json
+```
+
+Die erzeugte `comments_timeline.json` ist direkt die Eingabe für das UXP-Panel bzw. den ExtendScript-Fallback aus MVP 1. Alle Builder-Optionen: `node dist/cli/index.js hilfe`. Tests: `npm test` (node:test, 14 Tests).
+
+Der Timeline Builder erfüllt die Pflichtfunktionen aus dem Briefing: Offset-Korrektur, Zeitberechnung, Kommentarfilter (leer/zu kurz/Blockliste/Duplikate), Highlight-Markierung (ab Reaktionsschwelle), Flutbehandlung mit Gruppierung (`group_id`) und Verdrängung schwacher Kommentare durch reaktionsstarke, Timeline-Export und Validierung.
+
+## MVP 1 – Premiere-Proof-of-Concept
 
 Der PoC besteht aus zwei Teilen:
 
@@ -29,14 +50,15 @@ Installation und Testablauf: [`docs/installation-poc.md`](docs/installation-poc.
 
 ```
 whykiki-stream-companion/
-├── core/          # Kernlogik (Projekt-, Datei-, Timeline-Verarbeitung) – folgt in MVP 2
-├── adapters/      # Plattformadapter (facebook, youtube, twitch, instagram, csv, json) – folgt in MVP 2/3
+├── core/          # Kernlogik: Datenmodell, Timeline Builder, Validierung, Projektverwaltung ← MVP 2
+├── adapters/      # Plattformadapter – csv/ und json/ fertig (MVP 2), facebook/ folgt (MVP 3)
+├── cli/           # Kommandozeile 'wsc' (import, build, validate, export) ← MVP 2
 ├── premiere/      # Premiere-Integration (UXP-Panel + ExtendScript-Fallback) ← MVP 1
 ├── mcp/           # MCP-Server – folgt in MVP 4
 ├── templates/     # MOGRT-/Overlay-Templates und Mapping-Profile
 ├── docs/          # Dokumentation
-├── examples/      # Beispieldaten (comments_timeline.json, template_mapping.json)
-└── tests/         # Tests und Validierungsskripte
+├── examples/      # Beispieldaten (comments_timeline.json, comments_raw.csv, template_mapping.json)
+└── tests/         # Unit-Tests (node:test) und Validierungsskripte
 ```
 
 ## Datenformate
@@ -51,8 +73,8 @@ Mapping-Profil eines MOGRT: ordnet die logischen Felder (`comment_text`, `author
 
 ## Roadmap
 
-- **MVP 1** – Premiere-Proof-of-Concept ✅ (dieses Repo, Stand jetzt)
-- **MVP 2** – Core Timeline Builder (CSV/JSON-Import, Offset-Korrektur, Filter, Export)
+- **MVP 1** – Premiere-Proof-of-Concept ✅
+- **MVP 2** – Core Timeline Builder (CSV/JSON-Import, Offset-Korrektur, Filter, Export) ✅
 - **MVP 3** – Facebook-Adapter (Discovery, Kommentar-Import, Archivierung)
 - **MVP 4** – MCP-Server (Tools, Resources, Agentenintegration)
 - **MVP 5** – Weitere Plattformen (YouTube, Twitch, Instagram)
