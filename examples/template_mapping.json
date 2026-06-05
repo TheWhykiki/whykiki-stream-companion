@@ -1,15 +1,15 @@
 {
   "version": "1.0",
   "template": {
-    "name": "Dummy Chat Bubble",
+    "name": "ChatItem 1",
     "source": "custom",
     "authoring": "after_effects",
     "mogrt_path": "",
     "hinweis": "mogrt_path wird im Panel gesetzt. 'authoring' steuert den Textpfad: after_effects = Source-Text-JSON, premiere = Graphics-Komponenten."
   },
   "fields": {
-    "comment_text": "Source Text",
-    "author_name": "Author Name",
+    "comment_text": "Message",
+    "author_name": "ChatHeader",
     "avatar": null,
     "timestamp": null,
     "reaction_count": null

@@ -21,6 +21,5 @@
   ],
   "requiredPermissions": {
     "localFileSystem": "fullAccess"
-  },
-  "icons": []
+  }
 }

@@ -1,1 +1,57 @@
-UXP-Panel-Protokoll hier nach A9 einfuegen oder durch gespeicherte Logdatei ersetzen.
+[18:24:22] [INFO] WhyKiki Stream Companion PoC bereit. Premiere Pro 25.6+ erforderlich.
+[18:25:08] [OK] Timeline geladen: comments_timeline.json, 10 Kommentare.
+[18:25:41] [OK] MOGRT gewählt: /Users/whykiki/Daten/StableAudio/Github/StableAudio Helper Scripts/knowledge_base_docs/lyraaa Finetuning Video/ChatItem 1.mogrt
+[18:26:55] [OK] Mapping geladen: template_mapping.json
+[18:27:07] [INFO] Starte Platzierung in Projekt 'WhyKiki_PoC.prproj' …
+[18:27:07] [OK] c-0001: MOGRT bei 02:15 auf V3 eingefügt.
+[18:27:07] [OK] c-0001: Dauer auf 6s gesetzt.
+[18:27:07] [WARNUNG] c-0001: Kommentartext konnte nicht gesetzt werden – kette.getComponentCount is not a function (bekannte UXP-Grenze, ExtendScript-Fallback nutzen).
+[18:27:07] [WARNUNG] c-0001: Autorenname konnte nicht gesetzt werden – kette.getComponentCount is not a function (bekannte UXP-Grenze, ExtendScript-Fallback nutzen).
+[18:27:07] [OK] c-0001: Marker gesetzt.
+[18:27:08] [OK] c-0002: MOGRT bei 03:40 auf V3 eingefügt.
+[18:27:08] [OK] c-0002: Dauer auf 6s gesetzt.
+[18:27:08] [WARNUNG] c-0002: Kommentartext konnte nicht gesetzt werden – kette.getComponentCount is not a function (bekannte UXP-Grenze, ExtendScript-Fallback nutzen).
+[18:27:08] [WARNUNG] c-0002: Autorenname konnte nicht gesetzt werden – kette.getComponentCount is not a function (bekannte UXP-Grenze, ExtendScript-Fallback nutzen).
+[18:27:08] [OK] c-0002: Marker gesetzt.
+[18:27:08] [OK] c-0003: MOGRT bei 05:02 auf V3 eingefügt.
+[18:27:08] [OK] c-0003: Dauer auf 7s gesetzt.
+[18:27:08] [WARNUNG] c-0003: Kommentartext konnte nicht gesetzt werden – kette.getComponentCount is not a function (bekannte UXP-Grenze, ExtendScript-Fallback nutzen).
+[18:27:08] [WARNUNG] c-0003: Autorenname konnte nicht gesetzt werden – kette.getComponentCount is not a function (bekannte UXP-Grenze, ExtendScript-Fallback nutzen).
+[18:27:08] [OK] c-0003: Marker gesetzt.
+[18:27:08] [OK] c-0004: MOGRT bei 07:30 auf V3 eingefügt.
+[18:27:08] [OK] c-0004: Dauer auf 8s gesetzt.
+[18:27:08] [WARNUNG] c-0004: Kommentartext konnte nicht gesetzt werden – kette.getComponentCount is not a function (bekannte UXP-Grenze, ExtendScript-Fallback nutzen).
+[18:27:08] [WARNUNG] c-0004: Autorenname konnte nicht gesetzt werden – kette.getComponentCount is not a function (bekannte UXP-Grenze, ExtendScript-Fallback nutzen).
+[18:27:08] [OK] c-0004: Marker gesetzt.
+[18:27:08] [OK] c-0005: MOGRT bei 09:11 auf V3 eingefügt.
+[18:27:08] [OK] c-0005: Dauer auf 5s gesetzt.
+[18:27:08] [WARNUNG] c-0005: Kommentartext konnte nicht gesetzt werden – kette.getComponentCount is not a function (bekannte UXP-Grenze, ExtendScript-Fallback nutzen).
+[18:27:08] [WARNUNG] c-0005: Autorenname konnte nicht gesetzt werden – kette.getComponentCount is not a function (bekannte UXP-Grenze, ExtendScript-Fallback nutzen).
+[18:27:08] [OK] c-0005: Marker gesetzt.
+[18:27:08] [OK] c-0006: MOGRT bei 12:45 auf V3 eingefügt.
+[18:27:08] [OK] c-0006: Dauer auf 6s gesetzt.
+[18:27:08] [WARNUNG] c-0006: Kommentartext konnte nicht gesetzt werden – kette.getComponentCount is not a function (bekannte UXP-Grenze, ExtendScript-Fallback nutzen).
+[18:27:08] [WARNUNG] c-0006: Autorenname konnte nicht gesetzt werden – kette.getComponentCount is not a function (bekannte UXP-Grenze, ExtendScript-Fallback nutzen).
+[18:27:08] [OK] c-0006: Marker gesetzt.
+[18:27:08] [OK] c-0007: MOGRT bei 15:20 auf V3 eingefügt.
+[18:27:08] [OK] c-0007: Dauer auf 6s gesetzt.
+[18:27:08] [WARNUNG] c-0007: Kommentartext konnte nicht gesetzt werden – kette.getComponentCount is not a function (bekannte UXP-Grenze, ExtendScript-Fallback nutzen).
+[18:27:08] [WARNUNG] c-0007: Autorenname konnte nicht gesetzt werden – kette.getComponentCount is not a function (bekannte UXP-Grenze, ExtendScript-Fallback nutzen).
+[18:27:08] [OK] c-0007: Marker gesetzt.
+[18:27:08] [OK] c-0008: MOGRT bei 18:05 auf V3 eingefügt.
+[18:27:08] [OK] c-0008: Dauer auf 6s gesetzt.
+[18:27:08] [WARNUNG] c-0008: Kommentartext konnte nicht gesetzt werden – kette.getComponentCount is not a function (bekannte UXP-Grenze, ExtendScript-Fallback nutzen).
+[18:27:08] [WARNUNG] c-0008: Autorenname konnte nicht gesetzt werden – kette.getComponentCount is not a function (bekannte UXP-Grenze, ExtendScript-Fallback nutzen).
+[18:27:08] [OK] c-0008: Marker gesetzt.
+[18:27:08] [OK] c-0009: MOGRT bei 21:50 auf V3 eingefügt.
+[18:27:08] [OK] c-0009: Dauer auf 8s gesetzt.
+[18:27:08] [WARNUNG] c-0009: Kommentartext konnte nicht gesetzt werden – kette.getComponentCount is not a function (bekannte UXP-Grenze, ExtendScript-Fallback nutzen).
+[18:27:08] [WARNUNG] c-0009: Autorenname konnte nicht gesetzt werden – kette.getComponentCount is not a function (bekannte UXP-Grenze, ExtendScript-Fallback nutzen).
+[18:27:08] [OK] c-0009: Marker gesetzt.
+[18:27:08] [OK] c-0010: MOGRT bei 25:33 auf V3 eingefügt.
+[18:27:08] [OK] c-0010: Dauer auf 6s gesetzt.
+[18:27:08] [WARNUNG] c-0010: Kommentartext konnte nicht gesetzt werden – kette.getComponentCount is not a function (bekannte UXP-Grenze, ExtendScript-Fallback nutzen).
+[18:27:08] [WARNUNG] c-0010: Autorenname konnte nicht gesetzt werden – kette.getComponentCount is not a function (bekannte UXP-Grenze, ExtendScript-Fallback nutzen).
+[18:27:08] [OK] c-0010: Marker gesetzt.
+[18:27:08] [OK] Fertig: 10/10 MOGRTs platziert, 0 Texte gesetzt, 0 Fehler.
+[18:27:08] [WARNUNG] Hinweis: Source-Text ist über UXP derzeit nicht beschreibbar (Adobe-Limitierung). Für die Textbefüllung den ExtendScript-Fallback nutzen: premiere/extendscript/whykiki_poc.jsx
