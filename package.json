@@ -13,8 +13,9 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
-    "test": "npm run build && node --test dist/tests/",
-    "validate:examples": "node tests/validate_examples.js",
+    "prepare": "npm run build",
+    "test": "npm run build && node --test \"dist/tests/*.test.js\"",
+    "validate:examples": "node tests/validate_examples.cjs",
     "cli": "node dist/cli/index.js"
   },
   "devDependencies": {

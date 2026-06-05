@@ -24,6 +24,9 @@
 
 /* eslint-disable */
 
+// JSON-Polyfill für ExtendScript (ES3 hat kein natives JSON-Objekt)
+#include "whykiki_json.jsxinc"
+
 (function () {
   var MAX_KOMMENTARE = 10;
   var TICKS_PRO_SEKUNDE = 254016000000; // Premiere-Konstante
@@ -37,8 +40,8 @@
   }
 
   // -------------------------------------------------------------------------
-  // JSON lesen (ExtendScript hat kein zuverlässiges globales JSON-Objekt;
-  // eval ist für lokale, vertrauenswürdige Projektdateien ausreichend).
+  // JSON lesen – über das eingebundene Polyfill (strukturvalidierter Parser,
+  // kein nacktes eval mehr; Review-Befunde 9 und 13).
   // -------------------------------------------------------------------------
 
   function leseJsonDatei(datei) {
@@ -48,15 +51,7 @@
     }
     var inhalt = datei.read();
     datei.close();
-    return eval("(" + inhalt + ")");
-  }
-
-  function jsonSerialisieren(wert) {
-    // Minimale Serialisierung nur für das Source-Text-Dokument.
-    if (typeof JSON !== "undefined" && JSON.stringify) {
-      return JSON.stringify(wert);
-    }
-    throw new Error("Kein JSON.stringify verfügbar – bitte json2.js einbinden.");
+    return JSON.parse(inhalt);
   }
 
   // -------------------------------------------------------------------------
@@ -130,7 +125,9 @@
   // Kommentare platzieren
   // -------------------------------------------------------------------------
 
-  var offset = Number(timeline.offset_seconds) || 0;
+  // WICHTIG: timeline.offset_seconds ist rein deklarativ – der Timeline
+  // Builder hat den Offset bereits eingerechnet. NICHT erneut addieren
+  // (Review-Befund 2).
   var standard = mapping.defaults || {};
   var erfolge = 0;
   var textErfolge = 0;
@@ -144,7 +141,7 @@
     var tl = eintrag.timeline || {};
     var kid = kommentar.id || ("eintrag-" + (i + 1));
 
-    var startSekunden = (Number(tl.start_seconds) || 0) + offset;
+    var startSekunden = Number(tl.start_seconds) || 0;
     var dauerSekunden = Number(tl.duration_seconds) || Number(standard.duration_seconds) || 6;
     var videoSpur = (tl.video_track !== undefined) ? tl.video_track : (standard.video_track || 2);
     var audioSpur = (tl.audio_track !== undefined) ? tl.audio_track : (standard.audio_track || 0);
@@ -213,7 +210,7 @@
       var roh = param.getValue();
       var textDoc;
       try {
-        textDoc = eval("(" + roh + ")");
+        textDoc = JSON.parse(roh);
       } catch (eParse) {
         // Kein JSON-Textdokument → einfacher String-Parameter
         param.setValue(String(wert), true);
@@ -225,7 +222,7 @@
       if (textDoc.fontTextRunLength !== undefined) {
         textDoc.fontTextRunLength = String(wert).length;
       }
-      param.setValue(jsonSerialisieren(textDoc), true);
+      param.setValue(JSON.stringify(textDoc), true);
       log("OK", kid + ": " + bezeichnung + " gesetzt ('" + feldName + "').");
       return true;
     } catch (e) {

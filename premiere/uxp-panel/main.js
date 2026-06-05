@@ -213,7 +213,16 @@ async function mappingLaden() {
       return;
     }
 
-    zustand.mapping = Object.assign(standardMapping(), daten);
+    // Tiefes Mergen pro Sektion – ein Teilmapping darf die Default-
+    // Sektionen nicht komplett ersetzen (Review-Befund 23).
+    const std = standardMapping();
+    zustand.mapping = {
+      ...std,
+      ...daten,
+      template: { ...std.template, ...(daten.template || {}) },
+      fields: { ...std.fields, ...(daten.fields || {}) },
+      defaults: { ...std.defaults, ...(daten.defaults || {}) },
+    };
     zustand.mappingGeladen = true;
     if (zustand.mogrtPfad) {
       zustand.mapping.template.mogrt_path = zustand.mogrtPfad;
@@ -267,7 +276,9 @@ async function kommentarePlatzieren() {
     log("info", `Starte Platzierung in Projekt '${projekt.name}' …`);
 
     const eintraege = zustand.timeline.entries.slice(0, MAX_KOMMENTARE);
-    const offset = Number(zustand.timeline.offset_seconds) || 0;
+    // WICHTIG: timeline.offset_seconds ist rein deklarativ – der Timeline
+    // Builder hat den Offset bereits in start_seconds eingerechnet.
+    // Hier NICHT erneut addieren (Review-Befund 2).
     const standard = zustand.mapping.defaults || {};
 
     for (let i = 0; i < eintraege.length; i++) {
@@ -275,7 +286,7 @@ async function kommentarePlatzieren() {
       const kommentar = eintrag.comment;
       const tl = eintrag.timeline || {};
 
-      const startSekunden = (Number(tl.start_seconds) || 0) + offset;
+      const startSekunden = Number(tl.start_seconds) || 0;
       const dauerSekunden = Number(tl.duration_seconds) || Number(standard.duration_seconds) || 6;
       const videoSpur = Number.isInteger(tl.video_track) ? tl.video_track : (standard.video_track || 2);
       const audioSpur = Number.isInteger(tl.audio_track) ? tl.audio_track : (standard.audio_track || 0);
@@ -335,6 +346,12 @@ async function mogrtEinfuegen(projekt, sequenz, startSekunden, videoSpur, audioS
     ergebnis = editor.insertMogrtFromPath(zustand.mogrtPfad, startzeit, videoSpur, audioSpur);
   });
 
+  // Defensive Promise-Erkennung: je nach API-Version kann die Rückgabe
+  // synchron (Array) oder asynchron (Promise) sein (Review-Befund 10).
+  if (ergebnis && typeof ergebnis.then === "function") {
+    ergebnis = await ergebnis;
+  }
+
   if (!ergebnis || ergebnis.length === 0) {
     throw new Error("insertMogrtFromPath lieferte kein TrackItem zurück.");
   }
@@ -383,17 +400,24 @@ async function textBefuellen(projekt, trackItem, kommentar) {
 
   for (const ziel of zuSetzen) {
     try {
-      const param = await findeParameter(projekt, trackItem, ziel.feldName);
-      if (!param) {
-        log("warnung", `${kommentar.id}: Parameter '${ziel.feldName}' nicht gefunden (${ziel.bezeichnung}).`);
-        continue;
-      }
-      const keyframe = param.createKeyframe(ziel.wert);
+      // Suche, Keyframe-Erzeugung und Transaktion in EINER Lock-Sitzung –
+      // Param-Handles sind über Lock-Grenzen nicht garantiert stabil
+      // (Review-Befund 11, Muster der Adobe-Samples).
+      let gefunden = false;
       await projekt.lockedAccess(() => {
+        const param = findeParameterSync(trackItem, ziel.feldName);
+        if (!param) return;
+        const keyframe = param.createKeyframe(ziel.wert);
         projekt.executeTransaction((compound) => {
           compound.addAction(param.createSetValueAction(keyframe, true));
         }, "WhyKiki: MOGRT-Text setzen");
+        gefunden = true;
       });
+
+      if (!gefunden) {
+        log("warnung", `${kommentar.id}: Parameter '${ziel.feldName}' nicht gefunden (${ziel.bezeichnung}).`);
+        continue;
+      }
       log("ok", `${kommentar.id}: ${ziel.bezeichnung} gesetzt ('${ziel.feldName}').`);
       if (ziel.bezeichnung === "Kommentartext") kommentartextGesetzt = true;
     } catch (err) {
@@ -412,25 +436,22 @@ async function textBefuellen(projekt, trackItem, kommentar) {
  * Durchsucht die Komponentenkette des TrackItems nach einem Parameter
  * mit passendem displayName. UXP bietet kein getParamForDisplayName,
  * daher Iteration über alle Komponenten und Parameter.
+ * MUSS innerhalb einer lockedAccess-Sitzung aufgerufen werden.
  */
-async function findeParameter(projekt, trackItem, anzeigeName) {
-  let gefunden = null;
-  await projekt.lockedAccess(() => {
-    const kette = trackItem.getComponentChain();
-    const anzahlKomponenten = kette.getComponentCount();
-    for (let k = 0; k < anzahlKomponenten && !gefunden; k++) {
-      const komponente = kette.getComponentAtIndex(k);
-      const anzahlParameter = komponente.getParamCount();
-      for (let p = 0; p < anzahlParameter; p++) {
-        const param = komponente.getParam(p);
-        if (param && param.displayName === anzeigeName) {
-          gefunden = param;
-          break;
-        }
+function findeParameterSync(trackItem, anzeigeName) {
+  const kette = trackItem.getComponentChain();
+  const anzahlKomponenten = kette.getComponentCount();
+  for (let k = 0; k < anzahlKomponenten; k++) {
+    const komponente = kette.getComponentAtIndex(k);
+    const anzahlParameter = komponente.getParamCount();
+    for (let p = 0; p < anzahlParameter; p++) {
+      const param = komponente.getParam(p);
+      if (param && param.displayName === anzeigeName) {
+        return param;
       }
     }
-  });
-  return gefunden;
+  }
+  return null;
 }
 
 /**

@@ -24,7 +24,8 @@ export class CsvAdapter implements PlattformAdapter {
   readonly plattform = "csv" as const;
 
   async lese(eingabe: AdapterEingabe): Promise<Comment[]> {
-    const inhalt = await readFile(eingabe.dateipfad, "utf8");
+    // UTF-8-BOM entfernen (Excel-Export "CSV UTF-8", Review-Befund 12)
+    const inhalt = (await readFile(eingabe.dateipfad, "utf8")).replace(/^﻿/, "");
     const zeilen = parseCsv(inhalt);
     if (zeilen.length < 2) {
       throw new Error("CSV enthält keine Datenzeilen (Header + mind. 1 Zeile erwartet).");
@@ -54,7 +55,7 @@ export class CsvAdapter implements PlattformAdapter {
         return idx >= 0 ? (zeile[idx] ?? "").trim() : "";
       };
 
-      const createdAt = wert("created_at");
+      let createdAt = wert("created_at");
       let relativ = zahlOderNaN(wert("relative_time_seconds"));
 
       if (Number.isNaN(relativ)) {
@@ -68,6 +69,11 @@ export class CsvAdapter implements PlattformAdapter {
         throw new Error(
           `CSV Zeile ${i + 1}: relative_time_seconds fehlt und ist nicht aus created_at/started_at ableitbar.`
         );
+      }
+
+      // created_at ableiten, wenn nur die relative Zeit vorliegt (Review-Befund 1)
+      if (createdAt === "" && !Number.isNaN(streamStart)) {
+        createdAt = new Date(streamStart + relativ * 1000).toISOString();
       }
 
       kommentare.push({

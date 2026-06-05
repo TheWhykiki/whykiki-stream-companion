@@ -134,10 +134,14 @@ function normalisiere(
         `und das Projekt 'started_at' in metadata.json (siehe 'wsc discover').`
     );
   }
-  if (relativ < 0) {
-    // Kommentare vor Streamstart (z. B. Ankündigungspost) behalten wir mit 0s,
-    // der Timeline Builder filtert über clamp/Offset.
-    relativ = Math.max(0, relativ);
+  // Negative Zeiten (Kommentare vor Streamstart, z. B. unter dem
+  // Ankündigungspost) werden bewusst NICHT geclemmt – der Timeline Builder
+  // filtert sie kontrolliert und zählt sie in der Statistik (Review-Befund 8).
+
+  // Fehlt das absolute Datum, aber die relative Zeit ist bekannt und der
+  // Streamstart liegt vor: created_at ableiten (Review-Befund 1).
+  if (erstellt === "" && !Number.isNaN(streamStart)) {
+    erstellt = new Date(streamStart + relativ * 1000).toISOString();
   }
 
   const likes = zahl(alias(o, ["likes", "likesCount", "like_count", "reactions", "reactionsCount"]), 0);

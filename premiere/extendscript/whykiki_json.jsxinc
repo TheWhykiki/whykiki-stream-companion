@@ -1,0 +1,127 @@
+/**
+ * WhyKiki Stream Companion – JSON-Polyfill für ExtendScript (ES3).
+ *
+ * Premieres ExtendScript-Engine hat KEIN natives JSON-Objekt
+ * (Review-Befund 9). Dieses Include stellt JSON.parse und
+ * JSON.stringify nach dem bewährten json2.js-Muster bereit:
+ * parse validiert die Eingabe strukturell per Regex, bevor eval
+ * ausgeführt wird (verhindert Codeausführung aus Fremddaten,
+ * Review-Befund 13).
+ *
+ * Einbinden:  #include "whykiki_json.jsxinc"
+ */
+
+if (typeof JSON !== "object" || JSON === null) {
+  JSON = {};
+}
+
+(function () {
+
+  // ---------------------------------------------------------------------
+  // stringify
+  // ---------------------------------------------------------------------
+
+  var escapable = /[\\"\u0000-\u001f\u007f-\u009f\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g;
+  var meta = {
+    "\b": "\\b",
+    "\t": "\\t",
+    "\n": "\\n",
+    "\f": "\\f",
+    "\r": "\\r",
+    '"': '\\"',
+    "\\": "\\\\"
+  };
+
+  function quote(string) {
+    escapable.lastIndex = 0;
+    if (!escapable.test(string)) {
+      return '"' + string + '"';
+    }
+    return '"' + string.replace(escapable, function (a) {
+      var c = meta[a];
+      if (typeof c === "string") return c;
+      return "\\u" + ("0000" + a.charCodeAt(0).toString(16)).slice(-4);
+    }) + '"';
+  }
+
+  function str(key, holder) {
+    var i, k, v, partial;
+    var value = holder[key];
+
+    if (value && typeof value === "object" && typeof value.toJSON === "function") {
+      value = value.toJSON(key);
+    }
+
+    switch (typeof value) {
+      case "string":
+        return quote(value);
+      case "number":
+        return isFinite(value) ? String(value) : "null";
+      case "boolean":
+        return String(value);
+      case "object":
+        if (!value) return "null";
+
+        if (Object.prototype.toString.apply(value) === "[object Array]") {
+          partial = [];
+          for (i = 0; i < value.length; i += 1) {
+            partial[i] = str(i, value) || "null";
+          }
+          return "[" + partial.join(",") + "]";
+        }
+
+        partial = [];
+        for (k in value) {
+          if (Object.prototype.hasOwnProperty.call(value, k)) {
+            v = str(k, value);
+            if (v) partial.push(quote(k) + ":" + v);
+          }
+        }
+        return "{" + partial.join(",") + "}";
+      default:
+        return undefined; // function/undefined werden ausgelassen
+    }
+  }
+
+  if (typeof JSON.stringify !== "function") {
+    JSON.stringify = function (value) {
+      return str("", { "": value });
+    };
+  }
+
+  // ---------------------------------------------------------------------
+  // parse (json2-Muster: strukturelle Validierung, dann eval)
+  // ---------------------------------------------------------------------
+
+  if (typeof JSON.parse !== "function") {
+    JSON.parse = function (text) {
+      var j;
+      text = String(text);
+
+      // Unicode-Steuerzeichen escapen, die eval aus dem Tritt bringen
+      var cx = /[\u0000\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g;
+      cx.lastIndex = 0;
+      if (cx.test(text)) {
+        text = text.replace(cx, function (a) {
+          return "\\u" + ("0000" + a.charCodeAt(0).toString(16)).slice(-4);
+        });
+      }
+
+      // Strukturvalidierung (json2.js): erst Escapes und Strings
+      // neutralisieren, dann dürfen nur noch JSON-Token übrig sein.
+      if (
+        /^[\],:{}\s]*$/.test(
+          text
+            .replace(/\\(?:["\\\/bfnrt]|u[0-9a-fA-F]{4})/g, "@")
+            .replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, "]")
+            .replace(/(?:^|:|,)(?:\s*\[)+/g, "")
+        )
+      ) {
+        j = eval("(" + text + ")");
+        return j;
+      }
+
+      throw new SyntaxError("JSON.parse: ungültige JSON-Struktur");
+    };
+  }
+})();

@@ -45,7 +45,13 @@ export function validiereKommentar(roh: unknown, kontext: string): string[] {
   if (typeof c.confidence !== "number" || c.confidence < 0 || c.confidence > 1) {
     fehler.push(`${kontext}: confidence muss zwischen 0 und 1 liegen.`);
   }
-  if (typeof c.created_at === "string" && Number.isNaN(Date.parse(c.created_at))) {
+  // Leerer created_at ist erlaubt (Adapter mit reiner Sekundenangabe);
+  // nur ein nicht-leerer, unparsbarer Wert ist ein Fehler (Review-Befund 1).
+  if (
+    typeof c.created_at === "string" &&
+    c.created_at !== "" &&
+    Number.isNaN(Date.parse(c.created_at))
+  ) {
     fehler.push(`${kontext}: created_at ist kein gültiger ISO-Zeitstempel.`);
   }
   return fehler;
