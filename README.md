@@ -71,6 +71,13 @@ Ausgabe des (künftigen) Timeline Builders, Eingabe für die Premiere-Integratio
 
 Mapping-Profil eines MOGRT: ordnet die logischen Felder (`comment_text`, `author_name`, `avatar`, `timestamp`, `reaction_count`) den Anzeigenamen der Template-Parameter zu. Das Projekt ist niemals auf ein bestimmtes MOGRT fest verdrahtet. Beispiel: [`examples/template_mapping.json`](examples/template_mapping.json)
 
+## Konzept, Plan und Review
+
+- [`docs/konzept-und-plan.md`](docs/konzept-und-plan.md) – Zielarchitektur, kritische Bestandsaufnahme, Phasenplan P0–P5
+- [`docs/review-2026-06-05.md`](docs/review-2026-06-05.md) – vollständige Befundliste des Code-Reviews (24 Befunde)
+
+**Achtung:** Das PoC-Gate aus dem Briefing ist noch offen – das UXP-Panel wurde noch nicht in einer echten Premiere-Instanz validiert (Phase 0 des Plans).
+
 ## Roadmap
 
 - **MVP 1** – Premiere-Proof-of-Concept ✅
