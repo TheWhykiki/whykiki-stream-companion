@@ -56,21 +56,47 @@
 
   // -------------------------------------------------------------------------
   // Dateien wählen
+  //
+  // Headless-Modus (Validierungsbefund 2026-06-05): Wenn ein Aufrufer vorher
+  // $.global.WHYKIKI_TIMELINE / WHYKIKI_MOGRT / WHYKIKI_MAPPING gesetzt hat
+  // (siehe run_poc_autorun.jsx), werden die Dateidialoge uebersprungen.
   // -------------------------------------------------------------------------
 
-  var timelineDatei = File.openDialog("comments_timeline.json wählen", "*.json");
+  function dateiAusGlobal(name) {
+    if ($.global[name]) {
+      var d = new File(String($.global[name]));
+      if (d.exists) return d;
+      alert("Headless-Pfad existiert nicht: " + $.global[name]);
+      return null;
+    }
+    return undefined; // kein Override gesetzt
+  }
+
+  var timelineDatei = dateiAusGlobal("WHYKIKI_TIMELINE");
+  if (timelineDatei === null) return;
+  if (timelineDatei === undefined) {
+    timelineDatei = File.openDialog("comments_timeline.json wählen", "*.json");
+  }
   if (!timelineDatei) {
     alert("Abgebrochen: keine Timeline-Datei gewählt.");
     return;
   }
 
-  var mogrtDatei = File.openDialog("MOGRT-Datei wählen", "*.mogrt");
+  var mogrtDatei = dateiAusGlobal("WHYKIKI_MOGRT");
+  if (mogrtDatei === null) return;
+  if (mogrtDatei === undefined) {
+    mogrtDatei = File.openDialog("MOGRT-Datei wählen", "*.mogrt");
+  }
   if (!mogrtDatei) {
     alert("Abgebrochen: kein MOGRT gewählt.");
     return;
   }
 
-  var mappingDatei = File.openDialog("template_mapping.json wählen (Abbrechen = Standard-Mapping)", "*.json");
+  var mappingDatei = dateiAusGlobal("WHYKIKI_MAPPING");
+  if (mappingDatei === null) return;
+  if (mappingDatei === undefined) {
+    mappingDatei = File.openDialog("template_mapping.json wählen (Abbrechen = Standard-Mapping)", "*.json");
+  }
 
   // -------------------------------------------------------------------------
   // Daten laden
