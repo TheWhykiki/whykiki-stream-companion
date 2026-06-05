@@ -16,11 +16,11 @@
  *     "replies":                     [ ...gleiche Struktur... ] }
  *
  * Akzeptiert: Array, { comments: [...] } oder { data: [...] }.
- * Antworten (replies) werden flach in die Kommentarliste übernommen.
+ * Antworten (replies) werden flach übernommen (Badge "antwort",
+ * pfadbasierte IDs wie fb-3-r1 gegen Kollisionen, Review-Befund 16).
  *
- * Die relative Zeit wird aus Kommentardatum minus Streamstart
- * (meta.started_at, z. B. aus dem DYI-Export via 'wsc discover')
- * berechnet, sofern keine explizite Sekundenangabe vorliegt.
+ * Die Normalisierung (Zeitableitung, Mojibake-Reparatur, Defaults)
+ * übernimmt der Comment Normalizer (core/normalizer.ts).
  */
 
 import { readFile } from "node:fs/promises";
@@ -29,6 +29,16 @@ import type {
   Comment,
   PlattformAdapter,
 } from "../../core/types.js";
+import {
+  alias,
+  kontextAusMeta,
+  normalisiereKommentar,
+  zahl,
+  type RohKommentar,
+} from "../../core/normalizer.js";
+
+// Re-Export für bestehende Konsumenten/Tests
+export { repariereMojibake } from "../../core/normalizer.js";
 
 export class FacebookAdapter implements PlattformAdapter {
   readonly plattform = "facebook" as const;
@@ -49,21 +59,18 @@ export class FacebookAdapter implements PlattformAdapter {
       );
     }
 
-    const streamStart = eingabe.meta.started_at
-      ? Date.parse(eingabe.meta.started_at)
-      : NaN;
+    const kontext = kontextAusMeta(eingabe.meta, "facebook");
 
-    // Antworten flach einsammeln (Eltern-ID merken)
-    const flach: Array<{ eintrag: Record<string, unknown>; elternId: string | null }> = [];
-    liste.forEach((e, i) => {
-      sammle(e, null, flach, i);
-    });
+    // Antworten flach einsammeln, IDs pfadbasiert vergeben
+    const flach: Array<{ eintrag: Record<string, unknown>; fallbackId: string; istAntwort: boolean }> = [];
+    liste.forEach((e, i) => sammle(e, `fb-${i + 1}`, false, flach));
 
     const kommentare: Comment[] = [];
-    flach.forEach(({ eintrag, elternId }, index) => {
-      const k = normalisiere(eintrag, index, eingabe, streamStart, elternId);
-      if (k) kommentare.push(k);
-    });
+    for (const { eintrag, fallbackId, istAntwort } of flach) {
+      const rohKommentar = zuRohKommentar(eintrag, istAntwort);
+      if (!rohKommentar) continue; // Einträge ohne Text (z. B. reine Sticker)
+      kommentare.push(normalisiereKommentar(rohKommentar, kontext, fallbackId));
+    }
 
     kommentare.sort((a, b) => a.relative_time_seconds - b.relative_time_seconds);
     return kommentare;
@@ -82,154 +89,48 @@ function extrahiereListe(roh: unknown): unknown[] | null {
 
 function sammle(
   roh: unknown,
-  elternId: string | null,
-  ziel: Array<{ eintrag: Record<string, unknown>; elternId: string | null }>,
-  index: number
+  fallbackId: string,
+  istAntwort: boolean,
+  ziel: Array<{ eintrag: Record<string, unknown>; fallbackId: string; istAntwort: boolean }>
 ): void {
   if (typeof roh !== "object" || roh === null) return;
   const o = roh as Record<string, unknown>;
-  ziel.push({ eintrag: o, elternId });
+  ziel.push({ eintrag: o, fallbackId, istAntwort });
 
-  const eigeneId = String(alias(o, ["id", "commentId", "commentUrl"]) ?? `fb-${index + 1}`);
   const antworten = alias(o, ["replies", "answers", "children"]);
   if (Array.isArray(antworten)) {
-    antworten.forEach((a, i) => sammle(a, eigeneId, ziel, index * 1000 + i));
+    antworten.forEach((a, i) => sammle(a, `${fallbackId}-r${i + 1}`, true, ziel));
   }
 }
 
-function normalisiere(
-  o: Record<string, unknown>,
-  index: number,
-  eingabe: AdapterEingabe,
-  streamStart: number,
-  elternId: string | null
-): Comment | null {
+/** Exporter-Aliasse → RohKommentar; null bei Einträgen ohne Text. */
+function zuRohKommentar(o: Record<string, unknown>, istAntwort: boolean): RohKommentar | null {
   const nachricht = alias(o, ["comment", "text", "message", "content"]);
   if (typeof nachricht !== "string" || nachricht.trim().length === 0) {
-    return null; // Einträge ohne Text (z. B. reine Sticker) überspringen
+    return null;
   }
-
-  // Zeit: explizite Sekundenangabe > Datum minus Streamstart
-  let relativ = zahl(alias(o, ["relative_time_seconds", "time_in_video", "offset_seconds", "seconds"]));
-  let erstellt = "";
 
   const datumRoh = alias(o, ["date", "created_time", "created_at", "timestamp", "time"]);
-  if (typeof datumRoh === "number") {
-    // Unix-Sekunden (DYI/Apify-Stil)
-    const ms = datumRoh > 1e12 ? datumRoh : datumRoh * 1000;
-    erstellt = new Date(ms).toISOString();
-  } else if (typeof datumRoh === "string" && datumRoh.trim() !== "") {
-    erstellt = datumRoh;
-  }
-
-  if (Number.isNaN(relativ)) {
-    const t = Date.parse(erstellt);
-    if (!Number.isNaN(t) && !Number.isNaN(streamStart)) {
-      relativ = (t - streamStart) / 1000;
-    }
-  }
-  if (Number.isNaN(relativ)) {
-    throw new Error(
-      `Kommentar ${index + 1}: keine Zeit ermittelbar – Export braucht 'date'/'timestamp' ` +
-        `und das Projekt 'started_at' in metadata.json (siehe 'wsc discover').`
-    );
-  }
-  // Negative Zeiten (Kommentare vor Streamstart, z. B. unter dem
-  // Ankündigungspost) werden bewusst NICHT geclemmt – der Timeline Builder
-  // filtert sie kontrolliert und zählt sie in der Statistik (Review-Befund 8).
-
-  // Fehlt das absolute Datum, aber die relative Zeit ist bekannt und der
-  // Streamstart liegt vor: created_at ableiten (Review-Befund 1).
-  if (erstellt === "" && !Number.isNaN(streamStart)) {
-    erstellt = new Date(streamStart + relativ * 1000).toISOString();
-  }
-
-  const likes = zahl(alias(o, ["likes", "likesCount", "like_count", "reactions", "reactionsCount"]), 0);
   const profilUrl = String(alias(o, ["profileUrl", "profile_url", "authorUrl"]) ?? "");
+  const explizit = zahl(alias(o, ["relative_time_seconds", "time_in_video", "offset_seconds", "seconds"]));
 
   const badges: string[] = [];
-  if (elternId !== null) badges.push("antwort");
+  if (istAntwort) badges.push("antwort");
 
-  return {
-    id: String(alias(o, ["id", "commentId", "commentUrl"]) ?? `fb-${index + 1}`),
-    platform: "facebook",
-    stream_id: eingabe.meta.stream_id ?? "",
-    video_id: eingabe.meta.video_id ?? "",
-    author_name: repariereMojibake(String(alias(o, ["name", "author", "profileName", "username"]) ?? "Unbekannt")),
+  const roh: RohKommentar = {
+    message: nachricht,
+    author_name: String(alias(o, ["name", "author", "profileName", "username"]) ?? ""),
     author_handle: profilUrl ? profilUrl.replace(/^https?:\/\/(www\.)?facebook\.com\//, "") : "",
     author_avatar_url: String(alias(o, ["avatar", "avatarUrl", "profilePicture"]) ?? ""),
-    message: repariereMojibake(nachricht.trim()),
-    created_at: erstellt,
-    relative_time_seconds: relativ,
-    reactions: Number.isNaN(likes) ? 0 : likes,
+    reactions: zahl(alias(o, ["likes", "likesCount", "like_count", "reactions", "reactionsCount"]), 0),
     badges,
-    confidence: erstellt ? 1.0 : 0.5,
   };
-}
 
-function alias(o: Record<string, unknown>, namen: string[]): unknown {
-  for (const n of namen) {
-    if (o[n] !== undefined && o[n] !== null) return o[n];
-  }
-  return undefined;
-}
+  const eigeneId = alias(o, ["id", "commentId", "commentUrl"]);
+  if (eigeneId !== undefined) roh.id = String(eigeneId);
+  if (Number.isFinite(explizit)) roh.relative_time_seconds = explizit;
+  if (typeof datumRoh === "number") roh.created_at_unix = datumRoh;
+  else if (typeof datumRoh === "string") roh.created_at = datumRoh;
 
-function zahl(wert: unknown, standard = NaN): number {
-  if (typeof wert === "number" && Number.isFinite(wert)) return wert;
-  if (typeof wert === "string" && wert.trim() !== "") {
-    const n = Number(wert.replace(",", "."));
-    if (Number.isFinite(n)) return n;
-  }
-  return standard;
-}
-
-/**
- * Repariert die bekannte Mojibake-Eigenheit von Facebook-Exporten:
- * UTF-8-Bytes wurden als Latin-1 fehlinterpretiert ("fÃ¼r" statt "für").
- * Wird nur angewendet, wenn typische Indikatoren vorhanden sind.
- */
-export function repariereMojibake(s: string): string {
-  if (!istMojibakeVerdaechtig(s)) return s;
-
-  const bytes: number[] = [];
-  for (const zeichen of s) {
-    const byte = zuCp1252Byte(zeichen);
-    if (byte === null) return s; // echtes Unicode (z. B. korrektes Emoji) -> kein Mojibake
-    bytes.push(byte);
-  }
-
-  const repariert = Buffer.from(bytes).toString("utf8");
-  return repariert.includes("\uFFFD") ? s : repariert;
-}
-
-/** CP1252-Sonderzeichen (0x80-0x9F) zurueck auf ihre Bytewerte. */
-const CP1252_RUECKWAERTS: Record<string, number> = {
-  "\u20AC": 0x80, "\u201A": 0x82, "\u0192": 0x83, "\u201E": 0x84,
-  "\u2026": 0x85, "\u2020": 0x86, "\u2021": 0x87, "\u02C6": 0x88,
-  "\u2030": 0x89, "\u0160": 0x8a, "\u2039": 0x8b, "\u0152": 0x8c,
-  "\u017D": 0x8e, "\u2018": 0x91, "\u2019": 0x92, "\u201C": 0x93,
-  "\u201D": 0x94, "\u2022": 0x95, "\u2013": 0x96, "\u2014": 0x97,
-  "\u02DC": 0x98, "\u2122": 0x99, "\u0161": 0x9a, "\u203A": 0x9b,
-  "\u0153": 0x9c, "\u017E": 0x9e, "\u0178": 0x9f,
-};
-
-function zuCp1252Byte(zeichen: string): number | null {
-  const code = zeichen.codePointAt(0)!;
-  if (code <= 0xff) return code;
-  return CP1252_RUECKWAERTS[zeichen] ?? null;
-}
-
-/** Prueft auf UTF-8-Startbyte gefolgt von gueltigem Folgebyte (0x80-0xBF). */
-function istMojibakeVerdaechtig(s: string): boolean {
-  for (let i = 0; i < s.length - 1; i++) {
-    const start = s.charCodeAt(i);
-    const istStartbyte =
-      start === 0xc2 || start === 0xc3 || // 2-Byte-Sequenzen (Umlaute etc.)
-      (start >= 0xe0 && start <= 0xef) || // 3-Byte-Sequenzen
-      (start >= 0xf0 && start <= 0xf4);   // 4-Byte-Sequenzen (Emoji)
-    if (!istStartbyte) continue;
-    const folgebyte = zuCp1252Byte(s[i + 1]!);
-    if (folgebyte !== null && folgebyte >= 0x80 && folgebyte <= 0xbf) return true;
-  }
-  return false;
+  return roh;
 }

@@ -64,14 +64,26 @@ export function validiereTimelineDokument(roh: unknown): Validierungsergebnis {
   if (typeof roh !== "object" || roh === null) {
     return { gueltig: false, fehler: ["Dokument ist kein Objekt."], warnungen };
   }
-  const doc = roh as Partial<TimelineDocument> & Record<string, unknown>;
+  const doc = roh as Omit<Partial<TimelineDocument>, "version"> &
+    Record<string, unknown> & { version?: string };
 
-  if (doc.version !== "1.0") fehler.push("version muss '1.0' sein.");
+  // Schema v1.1: offset_seconds_applied (rein deklarativ);
+  // v1.0 (offset_seconds) wird mit Warnung weiter akzeptiert.
+  if (doc.version !== "1.0" && doc.version !== "1.1") {
+    fehler.push("version muss '1.0' oder '1.1' sein.");
+  }
+  if (doc.version === "1.0") {
+    warnungen.push(
+      "Schema v1.0 ist veraltet – bitte mit aktuellem Builder neu exportieren (v1.1, offset_seconds_applied)."
+    );
+    if (typeof doc.offset_seconds !== "number") {
+      fehler.push("offset_seconds fehlt oder ist keine Zahl.");
+    }
+  } else if (typeof doc.offset_seconds_applied !== "number") {
+    fehler.push("offset_seconds_applied fehlt oder ist keine Zahl.");
+  }
   if (typeof doc.project_id !== "string" || doc.project_id.length === 0) {
     fehler.push("project_id fehlt.");
-  }
-  if (typeof doc.offset_seconds !== "number") {
-    fehler.push("offset_seconds fehlt oder ist keine Zahl.");
   }
   if (!Array.isArray(doc.entries)) {
     fehler.push("entries fehlt oder ist kein Array.");
@@ -103,6 +115,9 @@ export function validiereTimelineDokument(roh: unknown): Validierungsergebnis {
     }
     if (!Number.isInteger(t.video_track) || (t.video_track as number) < 0) {
       fehler.push(`${kontext}: timeline.video_track muss ganzzahlig >= 0 sein.`);
+    }
+    if (!Number.isInteger(t.audio_track) || (t.audio_track as number) < 0) {
+      fehler.push(`${kontext}: timeline.audio_track muss ganzzahlig >= 0 sein.`);
     }
     if (typeof t.highlight !== "boolean") {
       fehler.push(`${kontext}: timeline.highlight muss boolean sein.`);

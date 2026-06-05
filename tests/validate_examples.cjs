@@ -29,7 +29,8 @@ console.log("Prüfe examples/comments_timeline.json");
 const timeline = ladeJson("examples/comments_timeline.json");
 
 pruefe(typeof timeline.project_id === "string" && timeline.project_id.length > 0, "project_id vorhanden");
-pruefe(typeof timeline.offset_seconds === "number", "offset_seconds ist Zahl");
+pruefe(timeline.version === "1.1", "Schema-Version 1.1");
+pruefe(typeof timeline.offset_seconds_applied === "number", "offset_seconds_applied ist Zahl");
 pruefe(Array.isArray(timeline.entries), "entries ist Array");
 pruefe(timeline.entries.length === 10, `genau 10 Einträge (gefunden: ${timeline.entries.length})`);
 

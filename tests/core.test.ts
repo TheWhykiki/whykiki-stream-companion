@@ -116,7 +116,7 @@ test("JsonAdapter: tolerantes Feld-Mapping (text/author/likes)", async () => {
 // Timeline Builder
 // ---------------------------------------------------------------------------
 
-test("Builder: Offset-Korrektur verschiebt Startzeiten", () => {
+test("Builder: Offset-Korrektur verschiebt Startzeiten (Schema v1.1)", () => {
   const { dokument } = bauesTimeline(
     [kommentar({ relative_time_seconds: 100 })],
     META,
@@ -124,7 +124,8 @@ test("Builder: Offset-Korrektur verschiebt Startzeiten", () => {
     { offset_seconds: -10 }
   );
   assert.equal(dokument.entries[0]!.timeline.start_seconds, 90);
-  assert.equal(dokument.offset_seconds, -10);
+  assert.equal(dokument.version, "1.1");
+  assert.equal(dokument.offset_seconds_applied, -10);
 });
 
 test("Builder: Kommentare vor 0s und nach Videoende fliegen raus", () => {
@@ -244,6 +245,81 @@ test("Validierung: gebaute Timeline ist gültig", () => {
   const ergebnis = validiereTimelineDokument(dokument);
   assert.deepEqual(ergebnis.fehler, []);
   assert.equal(ergebnis.gueltig, true);
+});
+
+// ---------------------------------------------------------------------------
+// Regressionstests für Review-Befunde 5, 7, 18, 24
+// ---------------------------------------------------------------------------
+
+test("Regression Befund 5: Flut-Gruppe endet bei freiem Slot", () => {
+  const eingabe: Comment[] = [];
+  // Flut: 6 Kommentare dicht beieinander (Fenster 3, Dauer 6s)
+  for (let i = 0; i < 6; i++) {
+    eingabe.push(kommentar({ id: `flut${i}`, message: `Flut ${i}`, relative_time_seconds: 100 + i * 0.1 }));
+  }
+  // Nachzügler weit nach Abklingen der Flut – Fenster wieder frei
+  eingabe.push(kommentar({ id: "spaeter", message: "ruhiger Moment", relative_time_seconds: 200 }));
+
+  const { dokument } = bauesTimeline(eingabe, META, "p1", {
+    max_concurrent: 3,
+    min_gap_seconds: 0,
+  });
+
+  const spaeter = dokument.entries.find((e) => e.comment.id === "spaeter")!;
+  assert.equal(spaeter.timeline.group_id, null, "Nachzügler darf keine Flut-Gruppe erben");
+});
+
+test("Regression Befund 7: max_shift begrenzt Drift", () => {
+  const eingabe: Comment[] = [];
+  for (let i = 0; i < 20; i++) {
+    eingabe.push(kommentar({ id: `d${i}`, message: `Drift ${i}`, relative_time_seconds: 100 }));
+  }
+  const { dokument, statistik } = bauesTimeline(eingabe, META, "p1", {
+    min_gap_seconds: 2,
+    max_shift_seconds: 5,
+    max_concurrent: 100, // Flutbehandlung ausschalten, nur Drift testen
+    filter_duplicates: false,
+  });
+
+  // Maximal 100s + 5s Verschiebung erlaubt
+  for (const e of dokument.entries) {
+    assert.ok(e.timeline.start_seconds <= 105.001, `Drift zu groß: ${e.timeline.start_seconds}`);
+  }
+  assert.ok(statistik.verworfen_drift > 0, "überzählige Kommentare müssen als Drift verworfen werden");
+});
+
+test("Regression Befund 18: Statistik-Invariante (Summe == eingegangen)", () => {
+  const eingabe: Comment[] = [
+    kommentar({ id: "leer", message: " ", relative_time_seconds: 1 }),
+    kommentar({ id: "ok1", message: "Hallo zusammen", relative_time_seconds: 10 }),
+    kommentar({ id: "vor0", message: "zu früh dran", relative_time_seconds: 2 }),
+    kommentar({ id: "ok2", message: "schönes Lied", relative_time_seconds: 50 }),
+    kommentar({ id: "spam", message: "kauft coins", relative_time_seconds: 60 }),
+  ];
+  const { statistik } = bauesTimeline(eingabe, META, "p1", {
+    offset_seconds: -5,
+    filter_blocklist: ["coins"],
+  });
+  const summe =
+    statistik.uebernommen + statistik.gefiltert_leer + statistik.gefiltert_kurz +
+    statistik.gefiltert_blockliste + statistik.gefiltert_duplikat +
+    statistik.gefiltert_ausserhalb + statistik.verworfen_flut + statistik.verworfen_drift;
+  assert.equal(summe, statistik.eingegangen);
+});
+
+test("Regression Befund 24: Duplikat nach Zeitfenster ist KEIN Duplikat", () => {
+  const { statistik } = bauesTimeline(
+    [
+      kommentar({ id: "a", message: "tolles Lied", relative_time_seconds: 100 }),
+      kommentar({ id: "b", message: "tolles Lied", relative_time_seconds: 130 }),  // im Fenster
+      kommentar({ id: "c", message: "tolles Lied", relative_time_seconds: 300 }),  // außerhalb
+    ],
+    META,
+    "p1",
+    { filter_duplicate_window_seconds: 60 }
+  );
+  assert.equal(statistik.gefiltert_duplikat, 1, "nur das Duplikat im Zeitfenster filtern");
+  assert.equal(statistik.uebernommen, 2);
 });
 
 test("Validierung: erkennt doppelte IDs und falsche Sortierung", () => {

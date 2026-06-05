@@ -61,6 +61,7 @@ Wichtige Optionen:
   --max-gleichzeitig <n>    Flutgrenze (build, Standard 3)
   --highlight-ab <n>        Highlight ab n Reaktionen (build, Standard 20)
   --min-laenge <n>          Filter: Mindestlänge (build, Standard 2)
+  --max-shift <s>           Max. Verschiebung durch Mindestabstand (build, Standard 10)
   --blockliste w1,w2        Filter: Blockwörter (build)
   --keine-duplikatfilter    Filter: Duplikate behalten (build)
   --ziel <pfad>             Zielpfad (export)
@@ -68,10 +69,10 @@ Wichtige Optionen:
 
 async function main(): Promise<number> {
   const [, , kommando, ...rest] = process.argv;
-  const opt = parseArgumente(rest);
   const log = new Protokoll();
 
   try {
+    const opt = parseArgumente(rest);
     switch (kommando) {
       case "discover":
         return await cmdDiscover(opt, log);
@@ -227,12 +228,13 @@ async function cmdBuild(opt: Map<string, string>, log: Protokoll): Promise<numbe
   log.info(`Normalisierte Kommentare geladen: ${kommentare.length}`);
 
   const builderOptionen: Partial<BuilderOptions> = {};
-  if (opt.has("offset")) builderOptionen.offset_seconds = Number(opt.get("offset"));
-  if (opt.has("dauer")) builderOptionen.default_duration_seconds = Number(opt.get("dauer"));
-  if (opt.has("spur")) builderOptionen.video_track = Number(opt.get("spur"));
-  if (opt.has("max-gleichzeitig")) builderOptionen.max_concurrent = Number(opt.get("max-gleichzeitig"));
-  if (opt.has("highlight-ab")) builderOptionen.highlight_min_reactions = Number(opt.get("highlight-ab"));
-  if (opt.has("min-laenge")) builderOptionen.filter_min_length = Number(opt.get("min-laenge"));
+  if (opt.has("offset")) builderOptionen.offset_seconds = zahlOption(opt, "offset");
+  if (opt.has("dauer")) builderOptionen.default_duration_seconds = zahlOption(opt, "dauer");
+  if (opt.has("spur")) builderOptionen.video_track = zahlOption(opt, "spur");
+  if (opt.has("max-gleichzeitig")) builderOptionen.max_concurrent = zahlOption(opt, "max-gleichzeitig");
+  if (opt.has("highlight-ab")) builderOptionen.highlight_min_reactions = zahlOption(opt, "highlight-ab");
+  if (opt.has("min-laenge")) builderOptionen.filter_min_length = zahlOption(opt, "min-laenge");
+  if (opt.has("max-shift")) builderOptionen.max_shift_seconds = zahlOption(opt, "max-shift");
   if (opt.has("blockliste")) {
     builderOptionen.filter_blocklist = (opt.get("blockliste") ?? "")
       .split(",")
@@ -305,32 +307,72 @@ async function cmdExport(opt: Map<string, string>, log: Protokoll): Promise<numb
 }
 
 // ---------------------------------------------------------------------------
-// Argument-Parsing (bewusst ohne Fremdpaket)
+// Argument-Parsing (bewusst ohne Fremdpaket; gehärtet nach Review-Befund 17:
+// bekannte Optionen deklariert, Wert-Optionen ohne Wert sind Fehler,
+// unbekannte Optionen sind Fehler, Zahlen werden validiert)
 // ---------------------------------------------------------------------------
+
+const WERT_OPTIONEN = new Set([
+  "projekt", "projekte-ordner", "datei", "format", "video", "ziel",
+  "offset", "dauer", "spur", "max-gleichzeitig", "highlight-ab",
+  "min-laenge", "blockliste", "max-shift",
+]);
+const FLAG_OPTIONEN = new Set(["keine-duplikatfilter"]);
 
 function parseArgumente(args: string[]): Map<string, string> {
   const map = new Map<string, string>();
   for (let i = 0; i < args.length; i++) {
     const a = args[i]!;
-    if (!a.startsWith("--")) continue;
-    const name = a.slice(2);
-    const naechstes = args[i + 1];
-    if (naechstes !== undefined && !naechstes.startsWith("--")) {
-      map.set(name, naechstes);
-      i++;
-    } else {
-      map.set(name, "true"); // Flag ohne Wert
+    if (!a.startsWith("--")) {
+      throw new Error(`Unerwartetes Argument '${a}'. Siehe 'wsc hilfe'.`);
     }
+    let name = a.slice(2);
+
+    // Syntax --name=wert unterstützen (nötig u. a. für negative Zahlen)
+    const gleichheitszeichen = name.indexOf("=");
+    if (gleichheitszeichen !== -1) {
+      const wert = name.slice(gleichheitszeichen + 1);
+      name = name.slice(0, gleichheitszeichen);
+      if (!WERT_OPTIONEN.has(name)) {
+        throw new Error(`Unbekannte Option '--${name}'. Siehe 'wsc hilfe'.`);
+      }
+      map.set(name, wert);
+      continue;
+    }
+
+    if (FLAG_OPTIONEN.has(name)) {
+      map.set(name, "true");
+      continue;
+    }
+    if (!WERT_OPTIONEN.has(name)) {
+      throw new Error(`Unbekannte Option '--${name}'. Siehe 'wsc hilfe'.`);
+    }
+    const naechstes = args[i + 1];
+    if (naechstes === undefined || naechstes.startsWith("--")) {
+      throw new Error(`Option '--${name}' braucht einen Wert. Siehe 'wsc hilfe'.`);
+    }
+    map.set(name, naechstes);
+    i++;
   }
   return map;
 }
 
 function pflicht(opt: Map<string, string>, name: string): string {
   const wert = opt.get(name);
-  if (!wert || wert === "true") {
+  if (!wert) {
     throw new Error(`Option --${name} ist erforderlich. Siehe 'wsc hilfe'.`);
   }
   return wert;
+}
+
+/** Validierte Zahl-Option; wirft bei nicht-numerischen Werten. */
+function zahlOption(opt: Map<string, string>, name: string): number {
+  const roh = opt.get(name)!;
+  const n = Number(roh);
+  if (!Number.isFinite(n)) {
+    throw new Error(`Option --${name}: '${roh}' ist keine Zahl.`);
+  }
+  return n;
 }
 
 function erkenneFormat(datei: string): string {

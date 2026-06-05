@@ -1,5 +1,5 @@
 {
-  "version": "1.0",
+  "version": "1.1",
   "generator": "whykiki-stream-companion",
   "project_id": "2020-04-12-balkonkonzert",
   "stream": {
@@ -10,7 +10,7 @@
     "started_at": "2020-04-12T18:00:00+02:00",
     "duration_seconds": 3600
   },
-  "offset_seconds": 0,
+  "offset_seconds_applied": 0,
   "entries": [
     {
       "comment": {

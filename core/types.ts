@@ -66,14 +66,20 @@ export interface StreamMeta {
   duration_seconds: number;
 }
 
-/** Wurzelformat von comments_timeline.json. */
+/**
+ * Wurzelformat von comments_timeline.json (Schema v1.1).
+ *
+ * Verbindliche Regel: ALLE Zeitwerte sind final. Konsumenten (UXP-Panel,
+ * ExtendScript, Overlay-Renderer) verrechnen nichts mehr – der Offset ist
+ * bereits in start_seconds eingearbeitet (Review-Befund 2).
+ */
 export interface TimelineDocument {
-  version: "1.0";
+  version: "1.1";
   generator: string;
   project_id: string;
   stream: StreamMeta;
-  /** Globale Offset-Korrektur in Sekunden (bereits angewendet). */
-  offset_seconds: number;
+  /** Bereits in start_seconds eingerechneter Offset – rein deklarativ. */
+  offset_seconds_applied: number;
   entries: TimelineEntry[];
 }
 
@@ -100,6 +106,14 @@ export interface BuilderOptions {
   max_concurrent: number;
   /** Mindestabstand zwischen zwei Einblendungen in Sekunden. */
   min_gap_seconds: number;
+  /**
+   * Maximale Verschiebung durch min_gap in Sekunden – darüber hinaus wird
+   * der Kommentar verworfen statt vom realen Moment entkoppelt
+   * (Review-Befund 7).
+   */
+  max_shift_seconds: number;
+  /** Duplikate nur innerhalb dieses Zeitfensters filtern (Review-Befund 24). */
+  filter_duplicate_window_seconds: number;
   /** Ab dieser Reaktionszahl wird ein Kommentar als Highlight markiert. */
   highlight_min_reactions: number;
   /** Filter: Mindestlänge der Nachricht in Zeichen. */
@@ -119,6 +133,8 @@ export const STANDARD_BUILDER_OPTIONEN: BuilderOptions = {
   audio_track: 0,
   max_concurrent: 3,
   min_gap_seconds: 0.5,
+  max_shift_seconds: 10,
+  filter_duplicate_window_seconds: 60,
   highlight_min_reactions: 20,
   filter_min_length: 2,
   filter_blocklist: [],

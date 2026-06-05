@@ -1,6 +1,5 @@
 /**
- * CSV-Adapter – liest Kommentar-Rohdaten aus CSV-Dateien und erzeugt
- * das normalisierte Comment-Format.
+ * CSV-Adapter – liest Kommentar-Rohdaten aus CSV-Dateien.
  *
  * Erwartete Spalten (Header-Zeile, Reihenfolge egal, Groß-/Kleinschreibung egal):
  *   id, author_name, message               → Pflicht
@@ -9,8 +8,9 @@
  *   reactions, badges, confidence          → optional
  *
  * 'badges' als durch | getrennte Liste (z. B. "fan|mod").
- * Fehlt relative_time_seconds, wird sie aus created_at und
- * meta.started_at berechnet.
+ * Trennzeichen: Komma oder Semikolon (automatisch erkannt), UTF-8-BOM
+ * wird entfernt (Excel-Export). Die Normalisierung übernimmt der
+ * Comment Normalizer; die Plattform kommt aus den Projektmetadaten.
  */
 
 import { readFile } from "node:fs/promises";
@@ -19,6 +19,13 @@ import type {
   Comment,
   PlattformAdapter,
 } from "../../core/types.js";
+import {
+  clamp01,
+  kontextAusMeta,
+  normalisiereKommentar,
+  zahl,
+  type RohKommentar,
+} from "../../core/normalizer.js";
 
 export class CsvAdapter implements PlattformAdapter {
   readonly plattform = "csv" as const;
@@ -40,10 +47,7 @@ export class CsvAdapter implements PlattformAdapter {
       }
     }
 
-    const streamStart = eingabe.meta.started_at
-      ? Date.parse(eingabe.meta.started_at)
-      : NaN;
-
+    const kontext = kontextAusMeta(eingabe.meta, "csv");
     const kommentare: Comment[] = [];
 
     for (let i = 1; i < zeilen.length; i++) {
@@ -55,57 +59,37 @@ export class CsvAdapter implements PlattformAdapter {
         return idx >= 0 ? (zeile[idx] ?? "").trim() : "";
       };
 
-      let createdAt = wert("created_at");
-      let relativ = zahlOderNaN(wert("relative_time_seconds"));
-
-      if (Number.isNaN(relativ)) {
-        // Aus created_at und Streamstart ableiten
-        const erstellt = Date.parse(createdAt);
-        if (!Number.isNaN(erstellt) && !Number.isNaN(streamStart)) {
-          relativ = (erstellt - streamStart) / 1000;
-        }
-      }
-      if (Number.isNaN(relativ) || relativ < 0) {
-        throw new Error(
-          `CSV Zeile ${i + 1}: relative_time_seconds fehlt und ist nicht aus created_at/started_at ableitbar.`
-        );
-      }
-
-      // created_at ableiten, wenn nur die relative Zeit vorliegt (Review-Befund 1)
-      if (createdAt === "" && !Number.isNaN(streamStart)) {
-        createdAt = new Date(streamStart + relativ * 1000).toISOString();
-      }
-
-      kommentare.push({
-        id: wert("id"),
-        platform: "csv",
-        stream_id: eingabe.meta.stream_id ?? "",
-        video_id: eingabe.meta.video_id ?? "",
+      const roh: RohKommentar = {
+        message: wert("message"),
         author_name: wert("author_name"),
         author_handle: wert("author_handle"),
         author_avatar_url: wert("author_avatar_url"),
-        message: wert("message"),
-        created_at: createdAt,
-        relative_time_seconds: relativ,
-        reactions: zahlOder(wert("reactions"), 0),
-        badges: wert("badges") ? wert("badges").split("|").map((b) => b.trim()).filter(Boolean) : [],
-        confidence: zahlOder(wert("confidence"), 1.0),
-      });
+        badges: wert("badges")
+          ? wert("badges").split("|").map((b) => b.trim()).filter(Boolean)
+          : [],
+      };
+
+      if (wert("id") !== "") roh.id = wert("id");
+      if (wert("created_at") !== "") roh.created_at = wert("created_at");
+
+      const relativ = zahl(wert("relative_time_seconds"));
+      if (Number.isFinite(relativ)) roh.relative_time_seconds = relativ;
+
+      const reaktionen = zahl(wert("reactions"));
+      if (Number.isFinite(reaktionen)) roh.reactions = reaktionen;
+
+      const confidence = zahl(wert("confidence"));
+      if (Number.isFinite(confidence)) roh.confidence = clamp01(confidence);
+
+      try {
+        kommentare.push(normalisiereKommentar(roh, kontext, `csv-${i + 1}`));
+      } catch (e) {
+        throw new Error(`CSV Zeile ${i + 1}: ${(e as Error).message}`);
+      }
     }
 
     return kommentare;
   }
-}
-
-function zahlOderNaN(s: string): number {
-  if (s === "") return NaN;
-  const n = Number(s.replace(",", "."));
-  return Number.isFinite(n) ? n : NaN;
-}
-
-function zahlOder(s: string, standard: number): number {
-  const n = zahlOderNaN(s);
-  return Number.isNaN(n) ? standard : n;
 }
 
 /**
