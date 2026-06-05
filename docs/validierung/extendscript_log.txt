@@ -1,0 +1,1 @@
+ExtendScript-Protokoll hier nach B6 einfuegen oder durch gespeicherte Logdatei ersetzen.

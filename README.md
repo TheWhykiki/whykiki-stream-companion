@@ -75,6 +75,9 @@ Mapping-Profil eines MOGRT: ordnet die logischen Felder (`comment_text`, `author
 
 - [`docs/konzept-und-plan.md`](docs/konzept-und-plan.md) – Zielarchitektur, kritische Bestandsaufnahme, Phasenplan P0–P5
 - [`docs/review-2026-06-05.md`](docs/review-2026-06-05.md) – vollständige Befundliste des Code-Reviews (24 Befunde)
+- [`docs/premiere-validierung.md`](docs/premiere-validierung.md) – Phase-0-Testplan fuer das offene Premiere-PoC-Gate
+- [`docs/validierung/cowork-auftrag.md`](docs/validierung/cowork-auftrag.md) – kurze Uebergabe fuer die externe Premiere-Pruefung
+- [`docs/validierung/ergebnis-2026-06-05.md`](docs/validierung/ergebnis-2026-06-05.md) – ausfuellbare Cowork-Vorlage fuer PASS/FAIL und Logs
 
 **Achtung:** Das PoC-Gate aus dem Briefing ist noch offen – das UXP-Panel wurde noch nicht in einer echten Premiere-Instanz validiert (Phase 0 des Plans).
 

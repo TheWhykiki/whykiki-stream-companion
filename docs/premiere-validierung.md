@@ -4,6 +4,11 @@ Ziel: Den Nachweis erbringen, den das Briefing fordert – 10 Kommentare landen 
 
 Geschätzte Dauer: 45–60 Minuten. Jeder Checkpoint hat ein erwartetes Ergebnis – bitte pro Punkt PASS/FAIL notieren (Vorlage am Ende).
 
+Arbeitsmappe fuer die Durchfuehrung: [`validierung/`](validierung/). Die ausfuellbare Ergebnisdatei liegt unter
+[`validierung/ergebnis-2026-06-05.md`](validierung/ergebnis-2026-06-05.md); die beiden Logs sollen als
+[`validierung/panel_log.txt`](validierung/panel_log.txt) und
+[`validierung/extendscript_log.txt`](validierung/extendscript_log.txt) abgelegt werden.
+
 ---
 
 ## 0. Voraussetzungen (einmalig, ~15 min)
