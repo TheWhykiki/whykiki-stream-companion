@@ -75,6 +75,6 @@ Mapping-Profil eines MOGRT: ordnet die logischen Felder (`comment_text`, `author
 
 - **MVP 1** – Premiere-Proof-of-Concept ✅
 - **MVP 2** – Core Timeline Builder (CSV/JSON-Import, Offset-Korrektur, Filter, Export) ✅
-- **MVP 3** – Facebook-Adapter (Discovery, Kommentar-Import, Archivierung)
+- **MVP 3** – Facebook-Adapter (Discovery via DYI-Export, Kommentar-Import aus Exporter-JSON, Mojibake-Reparatur) ✅ – Details: [`docs/facebook-import.md`](docs/facebook-import.md)
 - **MVP 4** – MCP-Server (Tools, Resources, Agentenintegration)
 - **MVP 5** – Weitere Plattformen (YouTube, Twitch, Instagram)

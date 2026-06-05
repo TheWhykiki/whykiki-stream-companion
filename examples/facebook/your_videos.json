@@ -1,0 +1,55 @@
+{
+  "videos_v2": [
+    {
+      "title": "Kiki war live.",
+      "timestamp": 1586707200,
+      "attachments": [
+        {
+          "data": [
+            {
+              "media": {
+                "uri": "your_facebook_activity/posts/media/videos/balkonkonzert_20200412.mp4",
+                "creation_timestamp": 1586707200,
+                "title": "Kiki war live.",
+                "description": "Balkonkonzert fÃ¼r die Nachbarschaft ðŸŽ¶",
+                "media_metadata": {
+                  "video_metadata": {
+                    "exif_data": [
+                      {
+                        "upload_ip": "192.0.2.10",
+                        "upload_timestamp": 1586714400
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "data": [
+        {
+          "post": "Heute Abend 18 Uhr: Balkonkonzert!"
+        }
+      ]
+    },
+    {
+      "title": "Kiki war live.",
+      "timestamp": 1587312000,
+      "attachments": [
+        {
+          "data": [
+            {
+              "media": {
+                "uri": "your_facebook_activity/posts/media/videos/wohnzimmersession_20200419.mp4",
+                "creation_timestamp": 1587312000,
+                "title": "Kiki war live.",
+                "description": "Wohnzimmersession Teil 2"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

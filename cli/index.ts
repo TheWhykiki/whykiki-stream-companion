@@ -17,7 +17,7 @@
  */
 
 import path from "node:path";
-import { copyFile, readFile } from "node:fs/promises";
+import { copyFile, readFile, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 
 import {
@@ -33,12 +33,16 @@ import {
 } from "../core/index.js";
 import { CsvAdapter } from "../adapters/csv/index.js";
 import { JsonAdapter } from "../adapters/json/index.js";
+import { FacebookAdapter } from "../adapters/facebook/index.js";
+import { entdeckeVideos } from "../adapters/facebook/discovery.js";
 
 const HILFE = `
 WhyKiki Stream Companion – Core CLI (MVP 2)
 
 Kommandos:
-  import     Rohdaten (CSV/JSON) einlesen und normalisieren
+  discover   Videos aus Facebook-Datenexport (your_videos.json) auflisten
+             und optional als Projekt übernehmen
+  import     Rohdaten (CSV/JSON/Facebook) einlesen und normalisieren
   build      Timeline aus normalisierten Kommentaren bauen
   validate   comments_timeline.json validieren
   export     Timeline an einen Zielort kopieren
@@ -47,8 +51,10 @@ Kommandos:
 Wichtige Optionen:
   --projekt <id>            Projekt-ID (Ordnername unter projects/)
   --projekte-ordner <pfad>  Wurzel der Projekte (Standard: ./projects)
-  --datei <pfad>            Eingabedatei (import/validate)
-  --format csv|json         Eingabeformat erzwingen (sonst per Endung)
+  --datei <pfad>            Eingabedatei (discover/import/validate)
+  --format csv|json|facebook  Eingabeformat erzwingen (sonst per Endung;
+                            facebook = Kommentar-Exporter-JSON)
+  --video <index>           discover: dieses Video als Projekt übernehmen
   --offset <s>              Offset-Korrektur in Sekunden (build, auch negativ)
   --dauer <s>               Standard-Einblenddauer (build, Standard 6)
   --spur <n>                Ziel-Videospur 0-basiert (build, Standard 2)
@@ -67,6 +73,8 @@ async function main(): Promise<number> {
 
   try {
     switch (kommando) {
+      case "discover":
+        return await cmdDiscover(opt, log);
       case "import":
         return await cmdImport(opt, log);
       case "build":
@@ -92,6 +100,73 @@ async function main(): Promise<number> {
 }
 
 // ---------------------------------------------------------------------------
+// discover
+// ---------------------------------------------------------------------------
+
+async function cmdDiscover(opt: Map<string, string>, log: Protokoll): Promise<number> {
+  const datei = pflicht(opt, "datei");
+  if (!existsSync(datei)) {
+    throw new Error(`Datei nicht gefunden: ${datei}`);
+  }
+
+  const videos = await entdeckeVideos(datei);
+  if (videos.length === 0) {
+    log.warnung("Keine Videos im Export gefunden.");
+    return 1;
+  }
+
+  log.ok(`${videos.length} Videos im Facebook-Export gefunden:`);
+  for (const v of videos) {
+    console.log(
+      `  [${v.index}] ${v.aufgenommen_am || "ohne Datum"}  ${v.titel}` +
+        (v.datei_uri ? `  (${v.datei_uri})` : "")
+    );
+  }
+
+  // Optional: Video als Projekt übernehmen
+  if (opt.has("video")) {
+    const index = Number(opt.get("video"));
+    const video = videos.find((v) => v.index === index);
+    if (!video) {
+      throw new Error(`Video mit Index ${index} nicht gefunden (1–${videos.length}).`);
+    }
+    const projektId =
+      opt.get("projekt") ??
+      `${(video.aufgenommen_am || "0000").substring(0, 10)}-${slug(video.titel)}`;
+    const projekteOrdner = opt.get("projekte-ordner") ?? "projects";
+    const projekt = await ladeProjekt(projekteOrdner, projektId, log);
+
+    const metadata = {
+      platform: "facebook",
+      stream_id: "",
+      video_id: String(index),
+      title: video.titel,
+      started_at: video.aufgenommen_am,
+      duration_seconds: 0,
+      quelle: { dyi_datei: path.resolve(datei), dyi_video_uri: video.datei_uri },
+    };
+    const metaPfad = path.join(projekt.wurzel, "source", "metadata.json");
+    await writeFile(metaPfad, JSON.stringify(metadata, null, 2), "utf8");
+    log.ok(`Projekt '${projektId}' angelegt, Metadaten archiviert: ${metaPfad}`);
+    log.info("Nächster Schritt: Kommentar-Export importieren mit " +
+      `'wsc import --projekt ${projektId} --datei <export.json> --format facebook'.`);
+  }
+
+  return 0;
+}
+
+function slug(text: string): string {
+  return (
+    text
+      .toLowerCase()
+      .replace(/[äöüß]/g, (z) => ({ ä: "ae", ö: "oe", ü: "ue", ß: "ss" })[z] ?? z)
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .substring(0, 40) || "video"
+  );
+}
+
+// ---------------------------------------------------------------------------
 // import
 // ---------------------------------------------------------------------------
 
@@ -107,9 +182,13 @@ async function cmdImport(opt: Map<string, string>, log: Protokoll): Promise<numb
   const format = (opt.get("format") ?? erkenneFormat(datei)).toLowerCase();
   const projekt = await ladeProjekt(projekteOrdner, projektId, log);
 
-  const adapter = format === "csv" ? new CsvAdapter() : new JsonAdapter();
-  if (format !== "csv" && format !== "json") {
-    throw new Error(`Unbekanntes Format '${format}' (csv oder json).`);
+  let adapter;
+  switch (format) {
+    case "csv": adapter = new CsvAdapter(); break;
+    case "json": adapter = new JsonAdapter(); break;
+    case "facebook": adapter = new FacebookAdapter(); break;
+    default:
+      throw new Error(`Unbekanntes Format '${format}' (csv, json oder facebook).`);
   }
   log.info(`Import (${format}): ${datei}`);
 

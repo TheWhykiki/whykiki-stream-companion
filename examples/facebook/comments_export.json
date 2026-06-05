@@ -1,0 +1,53 @@
+{
+  "comments": [
+    {
+      "name": "Martina K.",
+      "profileUrl": "https://www.facebook.com/martina.k",
+      "comment": "WunderschÃ¶n! GrÃ¼ÃŸe vom Nachbarbalkon ðŸŽ¶",
+      "date": "2020-04-12T18:02:15+0200",
+      "likes": 12,
+      "commentUrl": "https://www.facebook.com/video/?comment_id=1001"
+    },
+    {
+      "name": "Jens Petersen",
+      "profileUrl": "https://www.facebook.com/jens.petersen",
+      "comment": "Endlich wieder Livemusik, danke dafür!",
+      "date": "2020-04-12T18:03:40+0200",
+      "likes": 8,
+      "commentUrl": "https://www.facebook.com/video/?comment_id=1002",
+      "replies": [
+        {
+          "name": "Kiki",
+          "profileUrl": "https://www.facebook.com/kiki.musik",
+          "comment": "Sehr gerne! Schön, dass ihr dabei seid.",
+          "date": "2020-04-12T18:04:10+0200",
+          "likes": 3,
+          "commentUrl": "https://www.facebook.com/video/?comment_id=1003"
+        }
+      ]
+    },
+    {
+      "name": "Tom B.",
+      "profileUrl": "https://www.facebook.com/tom.b",
+      "comment": "Kannst du 'Über den Wolken' spielen?",
+      "date": "2020-04-12T18:07:30+0200",
+      "likes": 35,
+      "commentUrl": "https://www.facebook.com/video/?comment_id=1004"
+    },
+    {
+      "name": "Sticker Fan",
+      "profileUrl": "https://www.facebook.com/sticker.fan",
+      "comment": "",
+      "date": "2020-04-12T18:08:00+0200",
+      "likes": 0,
+      "commentUrl": "https://www.facebook.com/video/?comment_id=1005"
+    },
+    {
+      "name": "Heike Brandt",
+      "profileUrl": "https://www.facebook.com/heike.brandt",
+      "comment": "Bitte nächste Woche wieder! 🙏",
+      "timestamp": 1586709933,
+      "likesCount": 31
+    }
+  ]
+}
