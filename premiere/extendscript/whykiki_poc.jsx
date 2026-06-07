@@ -32,6 +32,7 @@
   var TICKS_PRO_SEKUNDE = 254016000000; // Premiere-Konstante
 
   var protokoll = [];
+  var modus = String($.global.WHYKIKI_MODE || "insert");
 
   function log(stufe, nachricht) {
     var zeile = "[" + stufe + "] " + nachricht;
@@ -82,14 +83,17 @@
     return;
   }
 
-  var mogrtDatei = dateiAusGlobal("WHYKIKI_MOGRT");
-  if (mogrtDatei === null) return;
-  if (mogrtDatei === undefined) {
-    mogrtDatei = File.openDialog("MOGRT-Datei wählen", "*.mogrt");
-  }
-  if (!mogrtDatei) {
-    alert("Abgebrochen: kein MOGRT gewählt.");
-    return;
+  var mogrtDatei = null;
+  if (modus !== "fill-existing") {
+    mogrtDatei = dateiAusGlobal("WHYKIKI_MOGRT");
+    if (mogrtDatei === null) return;
+    if (mogrtDatei === undefined) {
+      mogrtDatei = File.openDialog("MOGRT-Datei wählen", "*.mogrt");
+    }
+    if (!mogrtDatei) {
+      alert("Abgebrochen: kein MOGRT gewählt.");
+      return;
+    }
   }
 
   var mappingDatei = dateiAusGlobal("WHYKIKI_MAPPING");
@@ -145,7 +149,10 @@
   }
 
   log("INFO", "Projekt: " + app.project.name + " | Sequenz: " + sequenz.name);
-  log("INFO", "MOGRT: " + mogrtDatei.fsName);
+  log("INFO", "Modus: " + modus);
+  if (mogrtDatei) {
+    log("INFO", "MOGRT: " + mogrtDatei.fsName);
+  }
 
   // -------------------------------------------------------------------------
   // Kommentare platzieren
@@ -173,15 +180,26 @@
     var audioSpur = (tl.audio_track !== undefined) ? tl.audio_track : (standard.audio_track || 0);
 
     try {
-      // 1) MOGRT einfügen (Zeit in Ticks als String)
-      var startTicks = String(Math.round(startSekunden * TICKS_PRO_SEKUNDE));
-      var trackItem = sequenz.importMGT(mogrtDatei.fsName, startTicks, videoSpur, audioSpur);
+      // 1) MOGRT einfügen oder bestehenden Clip verwenden.
+      var trackItem;
+      if (modus === "fill-existing") {
+        trackItem = findeClipBeiStart(sequenz, videoSpur, startSekunden);
+        if (!trackItem) {
+          throw new Error("Kein bestehender Clip auf V" + (videoSpur + 1) + " bei " + startSekunden + "s gefunden.");
+        }
+        log("OK", kid + ": bestehenden MOGRT-Clip bei " + startSekunden + "s auf V" + (videoSpur + 1) + " gefunden.");
+      } else {
+        var startTicks = String(Math.round(startSekunden * TICKS_PRO_SEKUNDE));
+        trackItem = sequenz.importMGT(mogrtDatei.fsName, startTicks, videoSpur, audioSpur);
+      }
 
       if (!trackItem) {
         throw new Error("importMGT lieferte kein TrackItem (Spur V" + (videoSpur + 1) + " vorhanden?).");
       }
       erfolge++;
-      log("OK", kid + ": MOGRT bei " + startSekunden + "s auf V" + (videoSpur + 1) + " eingefügt.");
+      if (modus !== "fill-existing") {
+        log("OK", kid + ": MOGRT bei " + startSekunden + "s auf V" + (videoSpur + 1) + " eingefügt.");
+      }
 
       // 2) Dauer setzen
       try {
@@ -221,6 +239,57 @@
     }
   }
 
+  function findeClipBeiStart(sequenz, videoSpur, startSekunden) {
+    try {
+      var spur = sequenz.videoTracks[videoSpur];
+      if (!spur || !spur.clips) return null;
+      var clips = spur.clips;
+      var anzahl = clips.numItems || clips.length || 0;
+      var bester = null;
+      var besteAbweichung = 999999;
+      var besterMitMgt = null;
+      var besteMgtAbweichung = 999999;
+
+      for (var c = 0; c < anzahl; c++) {
+        var clip = clips[c];
+        if (!clip) continue;
+        var clipStart = sekundenVonTime(clip.start);
+        var abweichung = Math.abs(clipStart - startSekunden);
+        if (abweichung <= 0.08) {
+          try {
+            if (clip.getMGTComponent && clip.getMGTComponent()) {
+              if (abweichung < besteMgtAbweichung) {
+                besterMitMgt = clip;
+                besteMgtAbweichung = abweichung;
+              }
+            }
+          } catch (eMgt) {
+            // Clip ist kein befuellbares MOGRT oder Premiere liefert transient
+            // kein Component-Handle. Dann bleibt er nur Fallback-Kandidat.
+          }
+        }
+        if (abweichung < besteAbweichung) {
+          bester = clip;
+          besteAbweichung = abweichung;
+        }
+      }
+
+      // 25-fps-Sequenz: 0.08s = zwei Frames Toleranz, plus Rundungsreserve.
+      if (besterMitMgt) return besterMitMgt;
+      return besteAbweichung <= 0.08 ? bester : null;
+    } catch (e) {
+      log("WARNUNG", "Bestehende Clips konnten nicht durchsucht werden – " + e.message);
+      return null;
+    }
+  }
+
+  function sekundenVonTime(zeit) {
+    if (!zeit) return 0;
+    if (zeit.seconds !== undefined) return Number(zeit.seconds);
+    if (zeit.ticks !== undefined) return Number(zeit.ticks) / TICKS_PRO_SEKUNDE;
+    return Number(zeit) || 0;
+  }
+
   // -------------------------------------------------------------------------
   // Source-Text-Parameter setzen (JSON-Textdokument-Muster)
   // -------------------------------------------------------------------------
@@ -234,6 +303,14 @@
         return false;
       }
       var roh = param.getValue();
+      try {
+        param.setValue(String(wert), 1);
+        log("OK", kid + ": " + bezeichnung + " gesetzt (Direktwert '" + feldName + "').");
+        return true;
+      } catch (eDirekt) {
+        // Manche AE-MOGRTs liefern/erwarten ein JSON-Textdokument. Dann
+        // verwenden wir das PProPanel-Muster als Fallback.
+      }
       var textDoc;
       try {
         textDoc = JSON.parse(roh);
@@ -266,6 +343,26 @@
     textErfolge + " Kommentartexte gesetzt, " + fehlschlaege + " Fehler.";
   log("INFO", zusammenfassung);
 
+  if ($.global.WHYKIKI_PLAYHEAD_SECONDS !== undefined) {
+    try {
+      var position = new Time();
+      position.seconds = Number($.global.WHYKIKI_PLAYHEAD_SECONDS) || 0;
+      sequenz.setPlayerPosition(position.ticks);
+      log("OK", "Playhead auf " + position.seconds + "s gesetzt.");
+    } catch (ePlayhead) {
+      log("WARNUNG", "Playhead konnte nicht gesetzt werden – " + ePlayhead.message);
+    }
+  }
+
+  if ($.global.WHYKIKI_SAVE_PROJECT) {
+    try {
+      app.project.save();
+      log("OK", "Projekt gespeichert.");
+    } catch (eSave) {
+      log("WARNUNG", "Projekt konnte nicht gespeichert werden – " + eSave.message);
+    }
+  }
+
   try {
     var logDatei = new File(timelineDatei.parent.fsName + "/whykiki_poc_log.txt");
     logDatei.encoding = "UTF-8";
@@ -278,5 +375,7 @@
     log("WARNUNG", "Protokoll konnte nicht gespeichert werden: " + eLog.message);
   }
 
-  alert(zusammenfassung + "\n\nDetails: whykiki_poc_log.txt im Ordner der Timeline-JSON.");
+  if (!$.global.WHYKIKI_NO_ALERT) {
+    alert(zusammenfassung + "\n\nDetails: whykiki_poc_log.txt im Ordner der Timeline-JSON.");
+  }
 })();
